@@ -85,48 +85,29 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
   const textOrbit = useRef<THREE.Group>(null);
   const textSprites = useRef<Array<THREE.Sprite | null>>([]);
   const cameraTarget = useRef(new THREE.Vector3());
-  const gltf = useLoader(GLTFLoader, "/bravero-handshake-3d.glb");
+  const gltf = useLoader(GLTFLoader, "/bravero-handshake-sculpted.glb");
   const handshakeModel = useMemo(() => {
     const model = gltf.scene.clone(true);
     const bounds = new THREE.Box3().setFromObject(model);
     const centre = bounds.getCenter(new THREE.Vector3());
     const size = bounds.getSize(new THREE.Vector3());
     const longestSide = Math.max(size.x, size.y, size.z);
-    const gold = new THREE.Color("#bd7d2e");
-    const platinum = new THREE.Color("#d8dde0");
 
     model.position.sub(centre);
-    model.scale.setScalar(4.7 / longestSide);
+    model.scale.setScalar(4.95 / longestSide);
     model.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
-      const geometry = child.geometry.clone();
-      const position = geometry.getAttribute("position");
-      const colours = new Float32Array(position.count * 3);
-
-      for (let index = 0; index < position.count; index += 1) {
-        const blend = THREE.MathUtils.smoothstep(position.getZ(index), -0.055, 0.055);
-        const colour = gold.clone().lerp(platinum, blend);
-        colours[index * 3] = colour.r;
-        colours[index * 3 + 1] = colour.g;
-        colours[index * 3 + 2] = colour.b;
-      }
-
-      geometry.setAttribute("color", new THREE.BufferAttribute(colours, 3));
-      geometry.computeVertexNormals();
-      child.geometry = geometry;
-
       const source = child.material as THREE.MeshStandardMaterial;
-      const material = source.clone();
-      material.vertexColors = true;
-      material.color.set("#fffaf0");
-      material.metalness = 0.62;
-      material.roughness = 0.32;
-      material.envMapIntensity = 1.35;
-      if (material.map) {
-        material.map.colorSpace = THREE.SRGBColorSpace;
-        material.map.anisotropy = 8;
-      }
-      material.needsUpdate = true;
+      const isCuff = source.name === "Material.012" || source.name === "Material";
+      const isPlatinumHand = source.name === "Material.004";
+      const material = new THREE.MeshPhysicalMaterial({
+        color: isCuff ? "#111319" : isPlatinumHand ? "#d5d9dc" : "#b8752d",
+        metalness: isCuff ? 0.72 : 0.84,
+        roughness: isCuff ? 0.24 : 0.2,
+        clearcoat: isCuff ? 0.9 : 0.58,
+        clearcoatRoughness: 0.16,
+        envMapIntensity: 1.45,
+      });
       child.material = material;
       child.castShadow = true;
       child.receiveShadow = true;
@@ -269,13 +250,20 @@ function Scene({ progress, active }: { progress: number; active: number }) {
     <Canvas
       dpr={[1, 1.6]}
       camera={{ position: [0, 0, 7.4], fov: 42 }}
-      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+      gl={{
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+        toneMapping: THREE.ACESFilmicToneMapping,
+      }}
+      shadows
     >
       <fog attach="fog" args={["#06070b", 7.5, 13]} />
-      <ambientLight intensity={0.72} color="#a5b0bd" />
-      <directionalLight position={[-4, 5, 5]} intensity={4.1} color="#ffd79c" castShadow />
-      <directionalLight position={[4, -1, 3]} intensity={3.4} color="#b8d9ee" />
-      <pointLight position={[0, 1, 4]} intensity={8} distance={10} color="#9d6a35" />
+      <hemisphereLight args={["#dce9f2", "#2b1608", 1.15]} />
+      <directionalLight position={[-4, 5, 5]} intensity={4.8} color="#ffd39a" castShadow />
+      <directionalLight position={[4, -1, 3]} intensity={3.8} color="#c7e3f2" />
+      <spotLight position={[0, 5, -4]} intensity={14} angle={0.48} penumbra={0.8} color="#f3c477" />
+      <pointLight position={[0, -2, 4]} intensity={6} distance={10} color="#8d552e" />
       <Suspense fallback={null}>
         <HandshakeSculpture progress={progress} active={active} />
       </Suspense>
@@ -569,11 +557,11 @@ export default function Home() {
         <footer>
           <span>EXECUTIVE SEARCH · LEADERSHIP ADVISORY · STRATEGIC TALENT PARTNERSHIPS</span>
           <a
-            href="https://sketchfab.com/3d-models/handshake-l-36cb6156674044a7987023dbe4b37b8d"
+            href="https://sketchfab.com/3d-models/handshake-ramadhan-series-a784711be28440a1b0251cc21d904202"
             target="_blank"
             rel="noreferrer"
           >
-            3D HANDSHAKE · STEFANORIVERA · CC BY
+            3D HANDSHAKE · HANDOKO BINTORO · CC BY
           </a>
         </footer>
       </section>
