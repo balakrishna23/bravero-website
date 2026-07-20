@@ -1,7 +1,15 @@
 "use client";
 
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FormEvent,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
@@ -80,22 +88,20 @@ function Stars() {
 }
 
 function HandshakeSculpture({ progress, active }: { progress: number; active: number }) {
-  const sculpture = useRef<THREE.Group>(null);
+  const modelGroup = useRef<THREE.Group>(null);
   const orbit = useRef<THREE.Group>(null);
   const textOrbit = useRef<THREE.Group>(null);
   const textSprites = useRef<Array<THREE.Sprite | null>>([]);
   const cameraTarget = useRef(new THREE.Vector3());
   const gltf = useLoader(GLTFLoader, "/bravero-handshake-sculpted.glb");
-  const handshakeModel = useMemo(() => {
-    const model = gltf.scene.clone(true);
-    const bounds = new THREE.Box3().setFromObject(model);
-    const centre = bounds.getCenter(new THREE.Vector3());
-    const size = bounds.getSize(new THREE.Vector3());
-    const longestSide = Math.max(size.x, size.y, size.z);
+  const handshakeScene = useMemo(() => {
+    const scene = gltf.scene.clone(true);
 
-    model.position.sub(centre);
-    model.scale.setScalar(4.95 / longestSide);
-    model.traverse((child) => {
+    ["Cube_21", "Cube001_51", "Cube.001_51"].forEach((name) => {
+      scene.getObjectByName(name)?.removeFromParent();
+    });
+
+    scene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
       const source = child.material as THREE.MeshStandardMaterial;
       const isCuff = source.name === "Material.012" || source.name === "Material";
@@ -113,37 +119,69 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
       child.receiveShadow = true;
     });
 
-    return model;
+    return scene;
   }, [gltf.scene]);
+
+  useLayoutEffect(() => {
+    const group = modelGroup.current;
+    if (!group) return;
+
+    group.position.set(0, 0, 0);
+    group.rotation.set(0, 0, 0);
+    group.scale.set(1, 1, 1);
+    handshakeScene.position.set(0, 0, 0);
+    group.updateMatrixWorld(true);
+
+    const bounds = new THREE.Box3().setFromObject(group);
+    const center = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    const longestSide = Math.max(size.x, size.y, size.z);
+
+    handshakeScene.position.copy(center).multiplyScalar(-1);
+    group.scale.setScalar(4.95 / longestSide);
+    group.rotation.set(0.08, Math.PI / 2, -0.04);
+    group.updateMatrixWorld(true);
+  }, [handshakeScene]);
+
   const textTextures = useMemo(
     () => spatialTerms.map((term) => makeTextTexture(term)),
     [],
   );
 
-  useFrame(({ clock, camera }, delta) => {
-    if (!sculpture.current || !orbit.current || !textOrbit.current) return;
+  useFrame(({ clock, camera, pointer }, delta) => {
+    if (!modelGroup.current || !orbit.current || !textOrbit.current) return;
     const time = clock.getElapsedTime();
     const cameraArc = progress * Math.PI * 4.6 - Math.PI * 0.35;
-    const desiredY = time * 0.22 + progress * Math.PI * 3.2;
-    const desiredX = Math.sin(time * 0.31 + progress * Math.PI * 2.1) * 0.2 - 0.04;
-    sculpture.current.rotation.y = THREE.MathUtils.damp(
-      sculpture.current.rotation.y,
+    const desiredY = Math.PI / 2 + time * 0.22 + progress * Math.PI * 3.2 + pointer.x * 0.18;
+    const desiredX = 0.08 + Math.sin(time * 0.31 + progress * Math.PI * 2.1) * 0.2 - pointer.y * 0.12;
+    modelGroup.current.rotation.y = THREE.MathUtils.damp(
+      modelGroup.current.rotation.y,
       desiredY,
       2.7,
       delta,
     );
-    sculpture.current.rotation.x = THREE.MathUtils.damp(
-      sculpture.current.rotation.x,
+    modelGroup.current.rotation.x = THREE.MathUtils.damp(
+      modelGroup.current.rotation.x,
       desiredX,
       2.7,
       delta,
     );
-    sculpture.current.rotation.z = Math.sin(time * 0.38 + progress * Math.PI) * 0.07;
-    sculpture.current.position.y = Math.sin(time * 0.64) * 0.09;
+    modelGroup.current.rotation.z = THREE.MathUtils.damp(
+      modelGroup.current.rotation.z,
+      -0.04 + Math.sin(time * 0.38 + progress * Math.PI) * 0.07,
+      2.7,
+      delta,
+    );
     const desiredOffset = active === 0 ? 0.68 : active % 2 === 1 ? -0.92 : 0.92;
-    sculpture.current.position.x = THREE.MathUtils.damp(
-      sculpture.current.position.x,
-      desiredOffset,
+    modelGroup.current.position.x = THREE.MathUtils.damp(
+      modelGroup.current.position.x,
+      desiredOffset + pointer.x * 0.12,
+      2.7,
+      delta,
+    );
+    modelGroup.current.position.y = THREE.MathUtils.damp(
+      modelGroup.current.position.y,
+      Math.sin(time * 0.64) * 0.09 + pointer.y * 0.07,
       2.7,
       delta,
     );
@@ -238,8 +276,8 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
         )}
       </group>
 
-      <group ref={sculpture}>
-        <primitive object={handshakeModel} rotation={[0.08, Math.PI / 2, -0.04]} />
+      <group ref={modelGroup} name="modelGroup">
+        <primitive object={handshakeScene} />
       </group>
     </>
   );
