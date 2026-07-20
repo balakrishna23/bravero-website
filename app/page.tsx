@@ -3,6 +3,7 @@
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const chapters = [
   "The Partnership",
@@ -84,30 +85,55 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
   const textOrbit = useRef<THREE.Group>(null);
   const textSprites = useRef<Array<THREE.Sprite | null>>([]);
   const cameraTarget = useRef(new THREE.Vector3());
-  const loadedTexture = useLoader(THREE.TextureLoader, "/bravero-handshake.png");
-  const texture = useMemo(() => {
-    const configuredTexture = loadedTexture.clone();
-    configuredTexture.colorSpace = THREE.SRGBColorSpace;
-    configuredTexture.anisotropy = 8;
-    configuredTexture.needsUpdate = true;
-    return configuredTexture;
-  }, [loadedTexture]);
-  const reliefGeometry = useMemo(() => {
-    const geometry = new THREE.PlaneGeometry(6.35, 4.24, 88, 60);
-    const positions = geometry.attributes.position;
+  const gltf = useLoader(GLTFLoader, "/bravero-handshake-3d.glb");
+  const handshakeModel = useMemo(() => {
+    const model = gltf.scene.clone(true);
+    const bounds = new THREE.Box3().setFromObject(model);
+    const centre = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    const longestSide = Math.max(size.x, size.y, size.z);
+    const gold = new THREE.Color("#bd7d2e");
+    const platinum = new THREE.Color("#d8dde0");
 
-    for (let index = 0; index < positions.count; index += 1) {
-      const x = positions.getX(index);
-      const y = positions.getY(index);
-      const palmRelief = Math.exp(-Math.pow(x / 1.72, 4) - Math.pow((y + 0.08) / 0.76, 4));
-      const upperRelief = Math.exp(-Math.pow(x / 2.45, 6) - Math.pow((y - 0.2) / 1.2, 4));
-      const cuffRelief = Math.exp(-Math.pow((Math.abs(x) - 2.25) / 0.78, 4) - Math.pow(y / 1.08, 4));
-      positions.setZ(index, palmRelief * 0.32 + upperRelief * 0.12 + cuffRelief * 0.08);
-    }
+    model.position.sub(centre);
+    model.scale.setScalar(4.7 / longestSide);
+    model.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const geometry = child.geometry.clone();
+      const position = geometry.getAttribute("position");
+      const colours = new Float32Array(position.count * 3);
 
-    geometry.computeVertexNormals();
-    return geometry;
-  }, []);
+      for (let index = 0; index < position.count; index += 1) {
+        const blend = THREE.MathUtils.smoothstep(position.getZ(index), -0.055, 0.055);
+        const colour = gold.clone().lerp(platinum, blend);
+        colours[index * 3] = colour.r;
+        colours[index * 3 + 1] = colour.g;
+        colours[index * 3 + 2] = colour.b;
+      }
+
+      geometry.setAttribute("color", new THREE.BufferAttribute(colours, 3));
+      geometry.computeVertexNormals();
+      child.geometry = geometry;
+
+      const source = child.material as THREE.MeshStandardMaterial;
+      const material = source.clone();
+      material.vertexColors = true;
+      material.color.set("#fffaf0");
+      material.metalness = 0.62;
+      material.roughness = 0.32;
+      material.envMapIntensity = 1.35;
+      if (material.map) {
+        material.map.colorSpace = THREE.SRGBColorSpace;
+        material.map.anisotropy = 8;
+      }
+      material.needsUpdate = true;
+      child.material = material;
+      child.castShadow = true;
+      child.receiveShadow = true;
+    });
+
+    return model;
+  }, [gltf.scene]);
   const textTextures = useMemo(
     () => spatialTerms.map((term) => makeTextTexture(term)),
     [],
@@ -117,23 +143,23 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
     if (!sculpture.current || !orbit.current || !textOrbit.current) return;
     const time = clock.getElapsedTime();
     const cameraArc = progress * Math.PI * 4.6 - Math.PI * 0.35;
-    const desiredY = Math.sin(cameraArc) * 0.18;
-    const desiredX = Math.cos(cameraArc * 0.72) * 0.075 - 0.025;
+    const desiredY = time * 0.22 + progress * Math.PI * 3.2;
+    const desiredX = Math.sin(time * 0.31 + progress * Math.PI * 2.1) * 0.2 - 0.04;
     sculpture.current.rotation.y = THREE.MathUtils.damp(
       sculpture.current.rotation.y,
       desiredY,
-      3.1,
+      2.7,
       delta,
     );
     sculpture.current.rotation.x = THREE.MathUtils.damp(
       sculpture.current.rotation.x,
       desiredX,
-      3.1,
+      2.7,
       delta,
     );
-    sculpture.current.rotation.z = Math.sin(time * 0.42) * 0.018 + (active % 2 === 0 ? -0.012 : 0.012);
-    sculpture.current.position.y = Math.sin(time * 0.7) * 0.055;
-    const desiredOffset = active === 0 ? 0.72 : active % 2 === 1 ? -1.05 : 1.05;
+    sculpture.current.rotation.z = Math.sin(time * 0.38 + progress * Math.PI) * 0.07;
+    sculpture.current.position.y = Math.sin(time * 0.64) * 0.09;
+    const desiredOffset = active === 0 ? 0.68 : active % 2 === 1 ? -0.92 : 0.92;
     sculpture.current.position.x = THREE.MathUtils.damp(
       sculpture.current.position.x,
       desiredOffset,
@@ -173,9 +199,9 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
       material.color.set(depth > 0.54 ? "#f1eadc" : "#8e8375");
     });
 
-    const cameraX = desiredOffset * 0.24 + Math.sin(cameraArc) * 1.18;
-    const cameraY = Math.cos(cameraArc * 0.78) * 0.46;
-    const cameraZ = 7.15 + Math.cos(cameraArc) * 0.62;
+    const cameraX = desiredOffset * 0.2 + Math.sin(cameraArc) * 0.52;
+    const cameraY = Math.cos(cameraArc * 0.78) * 0.3;
+    const cameraZ = 7.35 + Math.cos(cameraArc) * 0.3;
     camera.position.x = THREE.MathUtils.damp(camera.position.x, cameraX, 2.4, delta);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, cameraY, 2.4, delta);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, cameraZ, 2.4, delta);
@@ -231,39 +257,8 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
         )}
       </group>
 
-      <group ref={sculpture} scale={1.06}>
-        <mesh geometry={reliefGeometry} position={[0.05, -0.08, -0.16]} scale={[1.035, 1.035, 1]}>
-          <meshBasicMaterial
-            map={texture}
-            color="#07080b"
-            transparent
-            opacity={0.62}
-            alphaTest={0.02}
-            side={THREE.DoubleSide}
-            toneMapped={false}
-          />
-        </mesh>
-        <mesh geometry={reliefGeometry} position={[0, 0, 0.02]}>
-          <meshBasicMaterial
-            map={texture}
-            transparent
-            alphaTest={0.02}
-            side={THREE.DoubleSide}
-            toneMapped={false}
-          />
-        </mesh>
-        <mesh geometry={reliefGeometry} position={[-0.035, 0.035, 0.07]} scale={[0.995, 0.995, 1]}>
-          <meshBasicMaterial
-            map={texture}
-            color="#f8ddb0"
-            transparent
-            opacity={0.1}
-            alphaTest={0.06}
-            blending={THREE.AdditiveBlending}
-            side={THREE.DoubleSide}
-            toneMapped={false}
-          />
-        </mesh>
+      <group ref={sculpture}>
+        <primitive object={handshakeModel} rotation={[0.08, Math.PI / 2, -0.04]} />
       </group>
     </>
   );
@@ -571,7 +566,16 @@ export default function Home() {
             <button type="submit" className="primary-cta full-field">Connect with our team <Arrow /></button>
           </form>
         </div>
-        <footer>EXECUTIVE SEARCH · LEADERSHIP ADVISORY · STRATEGIC TALENT PARTNERSHIPS</footer>
+        <footer>
+          <span>EXECUTIVE SEARCH · LEADERSHIP ADVISORY · STRATEGIC TALENT PARTNERSHIPS</span>
+          <a
+            href="https://sketchfab.com/3d-models/handshake-l-36cb6156674044a7987023dbe4b37b8d"
+            target="_blank"
+            rel="noreferrer"
+          >
+            3D HANDSHAKE · STEFANORIVERA · CC BY
+          </a>
+        </footer>
       </section>
     </main>
   );

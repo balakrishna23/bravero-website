@@ -679,9 +679,24 @@ h2 span {
   position: absolute;
   right: clamp(28px, 7vw, 132px);
   bottom: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 20px;
   color: rgba(241, 234, 220, 0.26);
   font-size: 0.5rem;
   letter-spacing: 0.13em;
+}
+
+.contact footer a {
+  color: rgba(214, 177, 113, 0.48);
+  text-decoration: none;
+  transition: color 220ms ease;
+}
+
+.contact footer a:hover,
+.contact footer a:focus-visible {
+  color: var(--gold);
 }
 
 @media (max-width: 1000px) {
