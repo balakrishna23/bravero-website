@@ -24,6 +24,26 @@ const orbitTerms = [
   "LEADERSHIP",
 ];
 
+const spawnedTerms = [
+  ["COURAGE", "CLARITY", "JUDGEMENT", "TRUST", "FUTURE", "IMPACT"],
+  ["DISCRETION", "PRECISION", "PARTNERSHIP", "INDIA", "GLOBAL", "INSIGHT"],
+  ["UNDERSTAND", "MAP", "ENGAGE", "ASSESS", "ALIGN", "APPOINT"],
+  ["CEO", "BOARD", "C-SUITE", "TRANSFORMATION", "GROWTH", "LEADERSHIP"],
+  ["STRATEGY", "CULTURE", "STAKEHOLDERS", "VALUES", "AMBITION", "OUTCOMES"],
+  ["NETWORK", "INTELLIGENCE", "RESEARCH", "CONFIDENCE", "40+ YEARS", "TRUST"],
+  ["MISSION-CRITICAL", "GCC", "SUCCESSION", "SCALE", "DECISION", "MOMENTUM"],
+  ["CONFIDENTIAL", "CONVERSATION", "PARTNERSHIP", "BEGIN", "TOGETHER", "NEXT"],
+];
+
+const spawnLayout = [
+  { x: -15, y: -25, z: 90, scale: 0.82, rotate: -4 },
+  { x: 17, y: -18, z: -120, scale: 0.68, rotate: 3 },
+  { x: -20, y: 2, z: -40, scale: 0.74, rotate: -2 },
+  { x: 21, y: 8, z: 120, scale: 1, rotate: 4 },
+  { x: -12, y: 25, z: 30, scale: 0.88, rotate: 2 },
+  { x: 15, y: 27, z: -90, scale: 0.7, rotate: -3 },
+];
+
 function Stars() {
   const positions = useMemo(() => {
     const values = new Float32Array(180);
@@ -49,6 +69,7 @@ function Stars() {
 function HandshakeSculpture({ progress, active }: { progress: number; active: number }) {
   const sculpture = useRef<THREE.Group>(null);
   const orbit = useRef<THREE.Group>(null);
+  const cameraTarget = useRef(new THREE.Vector3());
   const loadedTexture = useLoader(THREE.TextureLoader, "/bravero-handshake.png");
   const texture = useMemo(() => {
     const configuredTexture = loadedTexture.clone();
@@ -77,8 +98,9 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
   useFrame(({ clock, camera }, delta) => {
     if (!sculpture.current || !orbit.current) return;
     const time = clock.getElapsedTime();
-    const desiredY = Math.sin(progress * Math.PI * 2.15) * 0.13;
-    const desiredX = Math.cos(progress * Math.PI * 1.65) * 0.055 - 0.025;
+    const cameraArc = progress * Math.PI * 4.6 - Math.PI * 0.35;
+    const desiredY = Math.sin(cameraArc) * 0.18;
+    const desiredX = Math.cos(cameraArc * 0.72) * 0.075 - 0.025;
     sculpture.current.rotation.y = THREE.MathUtils.damp(
       sculpture.current.rotation.y,
       desiredY,
@@ -109,11 +131,26 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
     orbit.current.rotation.z = time * 0.055 + progress * Math.PI * 0.8;
     orbit.current.rotation.y = Math.sin(progress * Math.PI * 2) * 0.18;
 
-    const cameraX = Math.sin(progress * Math.PI * 2) * 0.42;
-    const cameraY = Math.cos(progress * Math.PI * 1.6) * 0.16;
+    const cameraX = desiredOffset * 0.24 + Math.sin(cameraArc) * 1.18;
+    const cameraY = Math.cos(cameraArc * 0.78) * 0.46;
+    const cameraZ = 7.15 + Math.cos(cameraArc) * 0.62;
     camera.position.x = THREE.MathUtils.damp(camera.position.x, cameraX, 2.4, delta);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, cameraY, 2.4, delta);
-    camera.lookAt(0, 0, 0);
+    camera.position.z = THREE.MathUtils.damp(camera.position.z, cameraZ, 2.4, delta);
+    cameraTarget.current.x = THREE.MathUtils.damp(
+      cameraTarget.current.x,
+      desiredOffset * 0.5,
+      2.8,
+      delta,
+    );
+    cameraTarget.current.y = THREE.MathUtils.damp(
+      cameraTarget.current.y,
+      Math.sin(cameraArc * 0.55) * 0.08,
+      2.8,
+      delta,
+    );
+    cameraTarget.current.z = 0.08;
+    camera.lookAt(cameraTarget.current);
   });
 
   return (
@@ -215,6 +252,37 @@ function OrbitingTerms({ progress }: { progress: number }) {
   );
 }
 
+function SpawnedTerms({ active }: { active: number }) {
+  return (
+    <div className="spawn-field" aria-hidden="true">
+      <div className="spawn-field-depth" key={active}>
+        {spawnedTerms[active].map((term, index) => {
+          const point = spawnLayout[index];
+          return (
+            <span
+              className="spawn-token"
+              key={`${active}-${term}`}
+              style={
+                {
+                  "--spawn-x": `${point.x}vw`,
+                  "--spawn-y": `${point.y}vh`,
+                  "--spawn-z": `${point.z}px`,
+                  "--spawn-scale": point.scale,
+                  "--spawn-rotate": `${point.rotate}deg`,
+                  "--spawn-delay": `${150 + index * 115}ms`,
+                } as React.CSSProperties
+              }
+            >
+              <i />
+              <b>{term}</b>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function Arrow() {
   return <span aria-hidden="true">↗</span>;
 }
@@ -231,7 +299,13 @@ export default function Home() {
         const context =
           canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: true }) ||
           canvas.getContext("webgl", { failIfMajorPerformanceCaveat: true });
-        setWebglReady(Boolean(context));
+        if (!context || context.isContextLost()) {
+          setWebglReady(false);
+          return;
+        }
+        const renderer = String(context.getParameter(context.RENDERER) ?? "");
+        context.getExtension("WEBGL_lose_context")?.loseContext();
+        setWebglReady(Boolean(renderer) && !renderer.toLowerCase().includes("disabled"));
       } catch {
         setWebglReady(false);
       }
@@ -269,16 +343,25 @@ export default function Home() {
     event.preventDefault();
   };
 
+  const sceneShift = active === 0 ? "12vw" : active % 2 === 1 ? "-13vw" : "13vw";
+  const fallbackArc = progress * Math.PI * 4.6 - Math.PI * 0.35;
+
   return (
-    <main className="experience">
+    <main
+      className="experience"
+      style={
+        {
+          "--scene-shift": sceneShift,
+          "--fallback-pan-x": `${Math.sin(fallbackArc) * 2.6}vw`,
+          "--fallback-pan-y": `${Math.cos(fallbackArc * 0.78) * 1.35}vh`,
+          "--fallback-scale": 1 + Math.cos(fallbackArc) * 0.025,
+          "--fallback-rotate": `${Math.sin(fallbackArc) * 1.1}deg`,
+        } as React.CSSProperties
+      }
+    >
       <div
         className={`scene ${webglReady ? "has-webgl" : ""}`}
         aria-label="Interactive metallic handshake sculpture"
-        style={
-          {
-            "--scene-shift": active === 0 ? "12vw" : active % 2 === 1 ? "-13vw" : "13vw",
-          } as React.CSSProperties
-        }
       >
         <div className="scene-fallback" aria-hidden="true" />
         {webglReady ? <Scene progress={progress} active={active} /> : null}
@@ -286,6 +369,7 @@ export default function Home() {
       <div className="ambient" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
       <OrbitingTerms progress={progress} />
+      <SpawnedTerms active={active} />
 
       <header className="site-header">
         <button className="brand" onClick={() => jumpTo(0)} aria-label="Bravero home">
