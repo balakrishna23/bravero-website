@@ -28,12 +28,15 @@ const spatialTerms = [
   "IMPACT",
 ];
 
-function FallbackTextOrbit() {
+function FallbackTextOrbit({ active }: { active: number }) {
   const midpoint = Math.ceil(spatialTerms.length / 2);
   const rings = [spatialTerms.slice(0, midpoint), spatialTerms.slice(midpoint)];
 
   return (
-    <div className="fallback-text-space" aria-hidden="true">
+    <div
+      className={`fallback-text-space ${active % 2 === 0 ? "copy-left" : "copy-right"}`}
+      aria-hidden="true"
+    >
       {rings.map((terms, ringIndex) => (
         <div className={`fallback-text-ring ring-${ringIndex + 1}`} key={ringIndex}>
           {terms.map((term, index) => (
@@ -62,28 +65,117 @@ function Arrow() {
 
 export default function Home() {
   const experienceRef = useRef<HTMLElement>(null);
+  const motionRef = useRef({
+    current: {
+      progress: 0.04,
+      shift: 12,
+      panX: 0,
+      panY: 0,
+      scale: 1,
+      rotate: 0,
+      yaw: 0,
+      pitch: 0,
+      pointerYaw: 0,
+      pointerPitch: 0,
+      pointerPanX: 0,
+      pointerPanY: 0,
+    },
+    target: {
+      progress: 0.04,
+      shift: 12,
+      panX: 0,
+      panY: 0,
+      scale: 1,
+      rotate: 0,
+      yaw: 0,
+      pitch: 0,
+      pointerYaw: 0,
+      pointerPitch: 0,
+      pointerPanX: 0,
+      pointerPanY: 0,
+    },
+  });
   const [active, setActive] = useState(0);
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    let frame = 0;
-    const update = () => {
-      frame = 0;
+    const root = experienceRef.current;
+    if (!root) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const keys = [
+      "progress",
+      "shift",
+      "panX",
+      "panY",
+      "scale",
+      "rotate",
+      "yaw",
+      "pitch",
+      "pointerYaw",
+      "pointerPitch",
+      "pointerPanX",
+      "pointerPanY",
+    ] as const;
+    let animationFrame = 0;
+    let lastTime = performance.now();
+
+    const updateTargets = () => {
       const total = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
       const nextProgress = Math.min(Math.max(window.scrollY / total, 0), 1);
-      setProgress(nextProgress);
-      setActive(Math.min(chapters.length - 1, Math.round(window.scrollY / window.innerHeight)));
+      const nextActive = Math.min(
+        chapters.length - 1,
+        Math.round(window.scrollY / window.innerHeight),
+      );
+      const arc = nextProgress * Math.PI * 4.6 - Math.PI * 0.35;
+      const target = motionRef.current.target;
+
+      target.progress = Math.max(0.04, nextProgress);
+      target.shift = nextActive === 0 ? 12 : nextActive % 2 === 1 ? -13 : 13;
+      target.panX = Math.sin(arc) * 2.35;
+      target.panY = Math.cos(arc * 0.78) * 1.1;
+      target.scale = 1 + Math.cos(arc) * 0.018;
+      target.rotate = Math.sin(arc) * 0.75;
+      target.yaw = Math.sin(arc * 0.68) * 5.4;
+      target.pitch = Math.cos(arc * 0.52) * 2.2;
+      setActive((current) => (current === nextActive ? current : nextActive));
     };
-    const onScroll = () => {
-      if (!frame) frame = window.requestAnimationFrame(update);
+
+    const renderMotion = (time: number) => {
+      const delta = Math.min((time - lastTime) / 1000, 0.05);
+      lastTime = time;
+      const ease = reducedMotion ? 1 : 1 - Math.exp(-delta * 5.4);
+      const { current, target } = motionRef.current;
+
+      keys.forEach((key) => {
+        current[key] += (target[key] - current[key]) * ease;
+      });
+
+      const floatY = reducedMotion ? 0 : Math.sin(time * 0.00072) * 3.5;
+      root.style.setProperty("--page-progress", current.progress.toFixed(4));
+      root.style.setProperty("--scene-shift", `${current.shift.toFixed(3)}vw`);
+      root.style.setProperty("--fallback-pan-x", `${current.panX.toFixed(3)}vw`);
+      root.style.setProperty("--fallback-pan-y", `${current.panY.toFixed(3)}vh`);
+      root.style.setProperty("--fallback-scale", current.scale.toFixed(5));
+      root.style.setProperty("--fallback-rotate", `${current.rotate.toFixed(3)}deg`);
+      root.style.setProperty("--asset-yaw", `${current.yaw.toFixed(3)}deg`);
+      root.style.setProperty("--asset-pitch", `${current.pitch.toFixed(3)}deg`);
+      root.style.setProperty("--pointer-yaw", `${current.pointerYaw.toFixed(3)}deg`);
+      root.style.setProperty("--pointer-pitch", `${current.pointerPitch.toFixed(3)}deg`);
+      root.style.setProperty("--pointer-pan-x", `${current.pointerPanX.toFixed(3)}vw`);
+      root.style.setProperty("--pointer-pan-y", `${current.pointerPanY.toFixed(3)}vh`);
+      root.style.setProperty("--float-y", `${floatY.toFixed(2)}px`);
+      animationFrame = window.requestAnimationFrame(renderMotion);
     };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+
+    updateTargets();
+    Object.assign(motionRef.current.current, motionRef.current.target);
+    animationFrame = window.requestAnimationFrame(renderMotion);
+    window.addEventListener("scroll", updateTargets, { passive: true });
+    window.addEventListener("resize", updateTargets);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", updateTargets);
+      window.removeEventListener("resize", updateTargets);
+      window.cancelAnimationFrame(animationFrame);
     };
   }, []);
 
@@ -95,9 +187,6 @@ export default function Home() {
     event.preventDefault();
   };
 
-  const sceneShift = active === 0 ? "12vw" : active % 2 === 1 ? "-13vw" : "13vw";
-  const fallbackArc = progress * Math.PI * 4.6 - Math.PI * 0.35;
-
   return (
     <main
       ref={experienceRef}
@@ -105,35 +194,26 @@ export default function Home() {
       onPointerMove={(event) => {
         const x = (event.clientX / window.innerWidth - 0.5) * 2;
         const y = (event.clientY / window.innerHeight - 0.5) * 2;
-        experienceRef.current?.style.setProperty("--pointer-yaw", `${x * 5.5}deg`);
-        experienceRef.current?.style.setProperty("--pointer-pitch", `${y * -3.5}deg`);
-        experienceRef.current?.style.setProperty("--pointer-pan-x", `${x * 0.55}vw`);
-        experienceRef.current?.style.setProperty("--pointer-pan-y", `${y * 0.45}vh`);
+        const target = motionRef.current.target;
+        target.pointerYaw = x * 3.8;
+        target.pointerPitch = y * -2.4;
+        target.pointerPanX = x * 0.38;
+        target.pointerPanY = y * 0.3;
       }}
       onPointerLeave={() => {
-        experienceRef.current?.style.setProperty("--pointer-yaw", "0deg");
-        experienceRef.current?.style.setProperty("--pointer-pitch", "0deg");
-        experienceRef.current?.style.setProperty("--pointer-pan-x", "0vw");
-        experienceRef.current?.style.setProperty("--pointer-pan-y", "0vh");
+        const target = motionRef.current.target;
+        target.pointerYaw = 0;
+        target.pointerPitch = 0;
+        target.pointerPanX = 0;
+        target.pointerPanY = 0;
       }}
-      style={
-        {
-          "--scene-shift": sceneShift,
-          "--fallback-pan-x": `${Math.sin(fallbackArc) * 2.6}vw`,
-          "--fallback-pan-y": `${Math.cos(fallbackArc * 0.78) * 1.35}vh`,
-          "--fallback-scale": 1 + Math.cos(fallbackArc) * 0.025,
-          "--fallback-rotate": `${Math.sin(fallbackArc) * 1.1}deg`,
-          "--asset-yaw": `${Math.sin(fallbackArc * 0.68) * 7}deg`,
-          "--asset-pitch": `${Math.cos(fallbackArc * 0.52) * 3}deg`,
-        } as React.CSSProperties
-      }
     >
       <div className="scene" aria-label="Detailed midnight-blue and platinum handshake">
         <div className="scene-fallback" aria-hidden="true" />
       </div>
       <div className="ambient" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
-      <FallbackTextOrbit />
+      <FallbackTextOrbit active={active} />
 
       <header className="site-header">
         <button className="brand" onClick={() => jumpTo(0)} aria-label="Bravero home">
@@ -152,7 +232,7 @@ export default function Home() {
       <aside className="chapter-rail" aria-label="Page sections">
         <span className="rail-label">{String(active + 1).padStart(2, "0")}</span>
         <div className="rail-track">
-          <i style={{ height: `${Math.max(4, progress * 100)}%` }} />
+          <i />
         </div>
         <span className="rail-label">08</span>
       </aside>
