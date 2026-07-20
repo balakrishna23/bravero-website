@@ -1,7 +1,7 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 const chapters = [
@@ -46,40 +46,39 @@ function Stars() {
   );
 }
 
-function Finger({
-  position,
-  rotation,
-  color,
-}: {
-  position: [number, number, number];
-  rotation: [number, number, number];
-  color: string;
-}) {
-  return (
-    <mesh position={position} rotation={rotation} castShadow>
-      <capsuleGeometry args={[0.12, 0.68, 10, 18]} />
-      <meshPhysicalMaterial
-        color={color}
-        metalness={0.92}
-        roughness={0.18}
-        clearcoat={1}
-        clearcoatRoughness={0.12}
-      />
-    </mesh>
-  );
-}
-
 function HandshakeSculpture({ progress, active }: { progress: number; active: number }) {
   const sculpture = useRef<THREE.Group>(null);
   const orbit = useRef<THREE.Group>(null);
-  const gold = "#d1a35d";
-  const platinum = "#b9c4c8";
+  const loadedTexture = useLoader(THREE.TextureLoader, "/bravero-handshake.png");
+  const texture = useMemo(() => {
+    const configuredTexture = loadedTexture.clone();
+    configuredTexture.colorSpace = THREE.SRGBColorSpace;
+    configuredTexture.anisotropy = 8;
+    configuredTexture.needsUpdate = true;
+    return configuredTexture;
+  }, [loadedTexture]);
+  const reliefGeometry = useMemo(() => {
+    const geometry = new THREE.PlaneGeometry(6.35, 4.24, 88, 60);
+    const positions = geometry.attributes.position;
+
+    for (let index = 0; index < positions.count; index += 1) {
+      const x = positions.getX(index);
+      const y = positions.getY(index);
+      const palmRelief = Math.exp(-Math.pow(x / 1.72, 4) - Math.pow((y + 0.08) / 0.76, 4));
+      const upperRelief = Math.exp(-Math.pow(x / 2.45, 6) - Math.pow((y - 0.2) / 1.2, 4));
+      const cuffRelief = Math.exp(-Math.pow((Math.abs(x) - 2.25) / 0.78, 4) - Math.pow(y / 1.08, 4));
+      positions.setZ(index, palmRelief * 0.32 + upperRelief * 0.12 + cuffRelief * 0.08);
+    }
+
+    geometry.computeVertexNormals();
+    return geometry;
+  }, []);
 
   useFrame(({ clock, camera }, delta) => {
     if (!sculpture.current || !orbit.current) return;
     const time = clock.getElapsedTime();
-    const desiredY = -0.42 + progress * Math.PI * 1.18;
-    const desiredX = Math.sin(progress * Math.PI * 2.2) * 0.16 - 0.08;
+    const desiredY = Math.sin(progress * Math.PI * 2.15) * 0.13;
+    const desiredX = Math.cos(progress * Math.PI * 1.65) * 0.055 - 0.025;
     sculpture.current.rotation.y = THREE.MathUtils.damp(
       sculpture.current.rotation.y,
       desiredY,
@@ -92,8 +91,8 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
       3.1,
       delta,
     );
-    sculpture.current.rotation.z = Math.sin(time * 0.42) * 0.025;
-    sculpture.current.position.y = Math.sin(time * 0.7) * 0.07;
+    sculpture.current.rotation.z = Math.sin(time * 0.42) * 0.018 + (active % 2 === 0 ? -0.012 : 0.012);
+    sculpture.current.position.y = Math.sin(time * 0.7) * 0.055;
     const desiredOffset = active === 0 ? 0.72 : active % 2 === 1 ? -1.05 : 1.05;
     sculpture.current.position.x = THREE.MathUtils.damp(
       sculpture.current.position.x,
@@ -108,7 +107,7 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
       delta,
     );
     orbit.current.rotation.z = time * 0.055 + progress * Math.PI * 0.8;
-    orbit.current.rotation.y = progress * Math.PI * 0.35;
+    orbit.current.rotation.y = Math.sin(progress * Math.PI * 2) * 0.18;
 
     const cameraX = Math.sin(progress * Math.PI * 2) * 0.42;
     const cameraY = Math.cos(progress * Math.PI * 1.6) * 0.16;
@@ -131,61 +130,38 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
         </mesh>
       </group>
 
-      <group ref={sculpture} scale={1.08}>
-        <mesh position={[-2.2, 0.33, 0.06]} rotation={[0, 0, -Math.PI / 2]} castShadow>
-          <cylinderGeometry args={[0.58, 0.78, 2.55, 32]} />
-          <meshPhysicalMaterial color="#080b13" metalness={0.68} roughness={0.26} />
-        </mesh>
-        <mesh position={[2.2, -0.26, -0.04]} rotation={[0, 0, -Math.PI / 2]} castShadow>
-          <cylinderGeometry args={[0.58, 0.78, 2.55, 32]} />
-          <meshPhysicalMaterial color="#10141d" metalness={0.72} roughness={0.23} />
-        </mesh>
-
-        <mesh position={[-1.02, 0.24, 0.05]} rotation={[0, 0, -Math.PI / 2]} castShadow>
-          <cylinderGeometry args={[0.64, 0.59, 0.42, 32]} />
-          <meshPhysicalMaterial color="#ece2cd" metalness={0.34} roughness={0.24} />
-        </mesh>
-        <mesh position={[1.02, -0.17, -0.04]} rotation={[0, 0, -Math.PI / 2]} castShadow>
-          <cylinderGeometry args={[0.64, 0.59, 0.42, 32]} />
-          <meshPhysicalMaterial color="#d7dde0" metalness={0.48} roughness={0.2} />
-        </mesh>
-
-        <mesh position={[-0.42, 0.08, 0.12]} rotation={[0.05, 0.08, -0.25]} scale={[1.25, 0.68, 0.82]} castShadow>
-          <sphereGeometry args={[0.58, 40, 28]} />
-          <meshPhysicalMaterial color={gold} metalness={0.94} roughness={0.16} clearcoat={1} />
-        </mesh>
-        <mesh position={[0.42, -0.04, -0.12]} rotation={[-0.05, -0.08, -0.25]} scale={[1.25, 0.68, 0.82]} castShadow>
-          <sphereGeometry args={[0.58, 40, 28]} />
-          <meshPhysicalMaterial color={platinum} metalness={0.96} roughness={0.14} clearcoat={1} />
-        </mesh>
-
-        {[-0.34, -0.12, 0.1, 0.32].map((offset, index) => (
-          <Finger
-            key={`gold-${offset}`}
-            position={[0.12 + index * 0.08, -0.34 + index * 0.055, 0.34 + offset]}
-            rotation={[0.08, 0.18, -1.02]}
-            color={gold}
+      <group ref={sculpture} scale={1.06}>
+        <mesh geometry={reliefGeometry} position={[0.05, -0.08, -0.16]} scale={[1.035, 1.035, 1]}>
+          <meshBasicMaterial
+            map={texture}
+            color="#07080b"
+            transparent
+            opacity={0.62}
+            alphaTest={0.02}
+            side={THREE.DoubleSide}
+            toneMapped={false}
           />
-        ))}
-        {[-0.34, -0.12, 0.1, 0.32].map((offset, index) => (
-          <Finger
-            key={`silver-${offset}`}
-            position={[-0.08 - index * 0.075, 0.33 - index * 0.05, -0.34 - offset]}
-            rotation={[-0.08, -0.18, 1.02]}
-            color={platinum}
-          />
-        ))}
-
-        <Finger position={[-0.04, 0.35, 0.42]} rotation={[0.32, 0.2, -0.62]} color={gold} />
-        <Finger position={[0.04, -0.28, -0.42]} rotation={[-0.32, -0.2, -0.62]} color={platinum} />
-
-        <mesh position={[0, -1.73, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[1.22, 0.035, 12, 96]} />
-          <meshStandardMaterial color="#af7d43" emissive="#6a3c1d" emissiveIntensity={1.1} />
         </mesh>
-        <mesh position={[0, -1.78, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[1.05, 64]} />
-          <meshStandardMaterial color="#080a10" metalness={0.9} roughness={0.24} />
+        <mesh geometry={reliefGeometry} position={[0, 0, 0.02]}>
+          <meshBasicMaterial
+            map={texture}
+            transparent
+            alphaTest={0.02}
+            side={THREE.DoubleSide}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh geometry={reliefGeometry} position={[-0.035, 0.035, 0.07]} scale={[0.995, 0.995, 1]}>
+          <meshBasicMaterial
+            map={texture}
+            color="#f8ddb0"
+            transparent
+            opacity={0.1}
+            alphaTest={0.06}
+            blending={THREE.AdditiveBlending}
+            side={THREE.DoubleSide}
+            toneMapped={false}
+          />
         </mesh>
       </group>
     </>
@@ -204,7 +180,9 @@ function Scene({ progress, active }: { progress: number; active: number }) {
       <directionalLight position={[-4, 5, 5]} intensity={4.1} color="#ffd79c" castShadow />
       <directionalLight position={[4, -1, 3]} intensity={3.4} color="#b8d9ee" />
       <pointLight position={[0, 1, 4]} intensity={8} distance={10} color="#9d6a35" />
-      <HandshakeSculpture progress={progress} active={active} />
+      <Suspense fallback={null}>
+        <HandshakeSculpture progress={progress} active={active} />
+      </Suspense>
     </Canvas>
   );
 }
@@ -247,15 +225,18 @@ export default function Home() {
   const [webglReady, setWebglReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const canvas = document.createElement("canvas");
-      const context =
-        canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: true }) ||
-        canvas.getContext("webgl", { failIfMajorPerformanceCaveat: true });
-      setWebglReady(Boolean(context));
-    } catch {
-      setWebglReady(false);
-    }
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const canvas = document.createElement("canvas");
+        const context =
+          canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: true }) ||
+          canvas.getContext("webgl", { failIfMajorPerformanceCaveat: true });
+        setWebglReady(Boolean(context));
+      } catch {
+        setWebglReady(false);
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
