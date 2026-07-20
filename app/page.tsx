@@ -15,34 +15,46 @@ const chapters = [
   "Confidential Conversation",
 ];
 
-const orbitTerms = [
+const spatialTerms = [
   "TRUST",
   "STRATEGY",
   "CULTURE",
   "ALIGNMENT",
   "INTELLIGENCE",
   "LEADERSHIP",
+  "JUDGEMENT",
+  "DISCRETION",
+  "PRECISION",
+  "PARTNERSHIP",
+  "COURAGE",
+  "IMPACT",
 ];
 
-const spawnedTerms = [
-  ["COURAGE", "CLARITY", "JUDGEMENT", "TRUST", "FUTURE", "IMPACT"],
-  ["DISCRETION", "PRECISION", "PARTNERSHIP", "INDIA", "GLOBAL", "INSIGHT"],
-  ["UNDERSTAND", "MAP", "ENGAGE", "ASSESS", "ALIGN", "APPOINT"],
-  ["CEO", "BOARD", "C-SUITE", "TRANSFORMATION", "GROWTH", "LEADERSHIP"],
-  ["STRATEGY", "CULTURE", "STAKEHOLDERS", "VALUES", "AMBITION", "OUTCOMES"],
-  ["NETWORK", "INTELLIGENCE", "RESEARCH", "CONFIDENCE", "40+ YEARS", "TRUST"],
-  ["MISSION-CRITICAL", "GCC", "SUCCESSION", "SCALE", "DECISION", "MOMENTUM"],
-  ["CONFIDENTIAL", "CONVERSATION", "PARTNERSHIP", "BEGIN", "TOGETHER", "NEXT"],
-];
+function makeTextTexture(label: string) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 768;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
 
-const spawnLayout = [
-  { x: -15, y: -25, z: 90, scale: 0.82, rotate: -4 },
-  { x: 17, y: -18, z: -120, scale: 0.68, rotate: 3 },
-  { x: -20, y: 2, z: -40, scale: 0.74, rotate: -2 },
-  { x: 21, y: 8, z: 120, scale: 1, rotate: 4 },
-  { x: -12, y: 25, z: 30, scale: 0.88, rotate: 2 },
-  { x: 15, y: 27, z: -90, scale: 0.7, rotate: -3 },
-];
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.strokeStyle = "rgba(214, 177, 113, 0.72)";
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(18, 64);
+  context.lineTo(94, 64);
+  context.stroke();
+  context.fillStyle = "rgba(241, 234, 220, 0.96)";
+  context.font = "600 38px Arial, sans-serif";
+  context.textBaseline = "middle";
+  context.fillText(label, 118, 66);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  texture.needsUpdate = true;
+  return texture;
+}
 
 function Stars() {
   const positions = useMemo(() => {
@@ -69,6 +81,8 @@ function Stars() {
 function HandshakeSculpture({ progress, active }: { progress: number; active: number }) {
   const sculpture = useRef<THREE.Group>(null);
   const orbit = useRef<THREE.Group>(null);
+  const textOrbit = useRef<THREE.Group>(null);
+  const textSprites = useRef<Array<THREE.Sprite | null>>([]);
   const cameraTarget = useRef(new THREE.Vector3());
   const loadedTexture = useLoader(THREE.TextureLoader, "/bravero-handshake.png");
   const texture = useMemo(() => {
@@ -94,9 +108,13 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
     geometry.computeVertexNormals();
     return geometry;
   }, []);
+  const textTextures = useMemo(
+    () => spatialTerms.map((term) => makeTextTexture(term)),
+    [],
+  );
 
   useFrame(({ clock, camera }, delta) => {
-    if (!sculpture.current || !orbit.current) return;
+    if (!sculpture.current || !orbit.current || !textOrbit.current) return;
     const time = clock.getElapsedTime();
     const cameraArc = progress * Math.PI * 4.6 - Math.PI * 0.35;
     const desiredY = Math.sin(cameraArc) * 0.18;
@@ -130,6 +148,30 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
     );
     orbit.current.rotation.z = time * 0.055 + progress * Math.PI * 0.8;
     orbit.current.rotation.y = Math.sin(progress * Math.PI * 2) * 0.18;
+    textOrbit.current.position.x = THREE.MathUtils.damp(
+      textOrbit.current.position.x,
+      desiredOffset,
+      2.7,
+      delta,
+    );
+
+    textSprites.current.forEach((sprite, index) => {
+      if (!sprite) return;
+      const angle = time * 0.18 + progress * Math.PI * 0.8 + (index / spatialTerms.length) * Math.PI * 2;
+      const depth = (Math.sin(angle) + 1) / 2;
+      const radius = 3.05 + (index % 3) * 0.22;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle * 1.62 + index * 0.43) * (1.25 + (index % 2) * 0.34);
+      const z = Math.sin(angle) * 1.46;
+      const scale = 0.62 + depth * 0.48;
+      const width = Math.min(2.35, 0.96 + spatialTerms[index].length * 0.105);
+
+      sprite.position.set(x, y, z);
+      sprite.scale.set(width * scale, 0.34 * scale, 1);
+      const material = sprite.material as THREE.SpriteMaterial;
+      material.opacity = 0.15 + depth * 0.7;
+      material.color.set(depth > 0.54 ? "#f1eadc" : "#8e8375");
+    });
 
     const cameraX = desiredOffset * 0.24 + Math.sin(cameraArc) * 1.18;
     const cameraY = Math.cos(cameraArc * 0.78) * 0.46;
@@ -165,6 +207,28 @@ function HandshakeSculpture({ progress, active }: { progress: number; active: nu
           <torusGeometry args={[2.65, 0.004, 8, 180]} />
           <meshBasicMaterial color="#d9c295" transparent opacity={0.24} />
         </mesh>
+      </group>
+
+      <group ref={textOrbit}>
+        {textTextures.map((map, index) =>
+          map ? (
+            <sprite
+              key={spatialTerms[index]}
+              ref={(sprite) => {
+                textSprites.current[index] = sprite;
+              }}
+            >
+              <spriteMaterial
+                map={map}
+                transparent
+                opacity={0}
+                depthTest
+                depthWrite={false}
+                toneMapped={false}
+              />
+            </sprite>
+          ) : null,
+        )}
       </group>
 
       <group ref={sculpture} scale={1.06}>
@@ -224,61 +288,30 @@ function Scene({ progress, active }: { progress: number; active: number }) {
   );
 }
 
-function OrbitingTerms({ progress }: { progress: number }) {
-  return (
-    <div className="orbit-copy" aria-hidden="true">
-      {orbitTerms.map((term, index) => {
-        const angle = (index / orbitTerms.length) * Math.PI * 2 + progress * Math.PI * 1.45;
-        const x = Math.cos(angle) * 38;
-        const y = Math.sin(angle) * 31;
-        const depth = (Math.sin(angle) + 1) / 2;
-        return (
-          <span
-            key={term}
-            style={
-              {
-                "--orbit-x": `${x}vw`,
-                "--orbit-y": `${y}vh`,
-                "--orbit-scale": 0.72 + depth * 0.48,
-                "--orbit-opacity": 0.16 + depth * 0.64,
-              } as React.CSSProperties
-            }
-          >
-            {term}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
+function FallbackTextOrbit() {
+  const midpoint = Math.ceil(spatialTerms.length / 2);
+  const rings = [spatialTerms.slice(0, midpoint), spatialTerms.slice(midpoint)];
 
-function SpawnedTerms({ active }: { active: number }) {
   return (
-    <div className="spawn-field" aria-hidden="true">
-      <div className="spawn-field-depth" key={active}>
-        {spawnedTerms[active].map((term, index) => {
-          const point = spawnLayout[index];
-          return (
+    <div className="fallback-text-space" aria-hidden="true">
+      {rings.map((terms, ringIndex) => (
+        <div className={`fallback-text-ring ring-${ringIndex + 1}`} key={ringIndex}>
+          {terms.map((term, index) => (
             <span
-              className="spawn-token"
-              key={`${active}-${term}`}
+              key={term}
               style={
                 {
-                  "--spawn-x": `${point.x}vw`,
-                  "--spawn-y": `${point.y}vh`,
-                  "--spawn-z": `${point.z}px`,
-                  "--spawn-scale": point.scale,
-                  "--spawn-rotate": `${point.rotate}deg`,
-                  "--spawn-delay": `${150 + index * 115}ms`,
+                  "--orbit-start": `${(index / terms.length) * 100}%`,
+                  "--orbit-delay": `${index * -2.8}s`,
                 } as React.CSSProperties
               }
             >
               <i />
-              <b>{term}</b>
+              {term}
             </span>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
@@ -368,8 +401,7 @@ export default function Home() {
       </div>
       <div className="ambient" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
-      <OrbitingTerms progress={progress} />
-      <SpawnedTerms active={active} />
+      {!webglReady ? <FallbackTextOrbit /> : null}
 
       <header className="site-header">
         <button className="brand" onClick={() => jumpTo(0)} aria-label="Bravero home">
