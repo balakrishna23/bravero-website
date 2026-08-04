@@ -1,16 +1,19 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { CSSProperties, FormEvent, useEffect, useRef, useState } from "react";
 
-const chapters = [
-  "The Partnership",
-  "Our Perspective",
-  "The Search System",
-  "Leadership Expertise",
-  "Three Alignments",
-  "Why Bravero",
-  "Decision Moments",
-  "Confidential Conversation",
+const PROCESS_STEPS = ["Understand", "Map", "Engage", "Assess", "Align", "Appoint"];
+
+const LEADERSHIP_ROLES = [
+  "CEO", "MD", "COO", "CTO", "CIO", "CHRO", "CFO", "GCC LEADERS",
+  "BUSINESS UNIT HEADS", "DIGITAL", "PRODUCT", "OPERATIONS",
+];
+
+const DECISION_ITEMS = [
+  "Appoint a C-suite executive",
+  "Strengthen the leadership bench",
+  "Build a GCC leadership team",
+  "Find mission-critical talent",
 ];
 
 const spatialTerms = [
@@ -27,6 +30,12 @@ const spatialTerms = [
   "COURAGE",
   "IMPACT",
 ];
+
+type SubmitState =
+  | { status: "idle" }
+  | { status: "submitting" }
+  | { status: "success"; message: string }
+  | { status: "error"; message: string };
 
 function FallbackTextOrbit({ active }: { active: number }) {
   const midpoint = Math.ceil(spatialTerms.length / 2);
@@ -46,7 +55,7 @@ function FallbackTextOrbit({ active }: { active: number }) {
                 {
                   "--orbit-start": `${(index / terms.length) * 100}%`,
                   "--orbit-delay": `${index * -2.8}s`,
-                } as React.CSSProperties
+                } as CSSProperties
               }
             >
               <i />
@@ -60,172 +69,108 @@ function FallbackTextOrbit({ active }: { active: number }) {
 }
 
 function Arrow() {
-  return <span aria-hidden="true">↗</span>;
+  return <span aria-hidden="true">-&gt;</span>;
 }
 
 export default function Home() {
   const experienceRef = useRef<HTMLElement>(null);
-  const motionRef = useRef({
-    current: {
-      progress: 0.04,
-      shift: 12,
-      panX: 0,
-      panY: 0,
-      scale: 1,
-      rotate: 0,
-      yaw: 0,
-      pitch: 0,
-      pointerYaw: 0,
-      pointerPitch: 0,
-      pointerPanX: 0,
-      pointerPanY: 0,
-    },
-    target: {
-      progress: 0.04,
-      shift: 12,
-      panX: 0,
-      panY: 0,
-      scale: 1,
-      rotate: 0,
-      yaw: 0,
-      pitch: 0,
-      pointerYaw: 0,
-      pointerPitch: 0,
-      pointerPanX: 0,
-      pointerPanY: 0,
-    },
-  });
   const [active, setActive] = useState(0);
+  const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
 
   useEffect(() => {
     const root = experienceRef.current;
     if (!root) return;
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const keys = [
-      "progress",
-      "shift",
-      "panX",
-      "panY",
-      "scale",
-      "rotate",
-      "yaw",
-      "pitch",
-      "pointerYaw",
-      "pointerPitch",
-      "pointerPanX",
-      "pointerPanY",
-    ] as const;
-    let animationFrame = 0;
-    let lastTime = performance.now();
+    const chapterEls = Array.from(root.querySelectorAll<HTMLElement>(".chapter"));
 
-    const updateTargets = () => {
+    const updateActive = () => {
       const total = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
-      const nextProgress = Math.min(Math.max(window.scrollY / total, 0), 1);
-      const nextActive = Math.min(
-        chapters.length - 1,
-        Math.round(window.scrollY / window.innerHeight),
-      );
-      const arc = nextProgress * Math.PI * 4.6 - Math.PI * 0.35;
-      const target = motionRef.current.target;
+      const progress = Math.min(Math.max(window.scrollY / total, 0), 1);
+      root.style.setProperty("--page-progress", Math.max(0.04, progress).toFixed(4));
 
-      target.progress = Math.max(0.04, nextProgress);
-      target.shift = nextActive === 0 ? 12 : nextActive % 2 === 1 ? -13 : 13;
-      target.panX = Math.sin(arc) * 2.35;
-      target.panY = Math.cos(arc * 0.78) * 1.1;
-      target.scale = 1 + Math.cos(arc) * 0.018;
-      target.rotate = Math.sin(arc) * 0.75;
-      target.yaw = Math.sin(arc * 0.68) * 5.4;
-      target.pitch = Math.cos(arc * 0.52) * 2.2;
+      const viewportMid = window.innerHeight / 2;
+      let nextActive = 0;
+      for (let i = 0; i < chapterEls.length; i += 1) {
+        if (chapterEls[i].getBoundingClientRect().top <= viewportMid) {
+          nextActive = i;
+        }
+      }
       setActive((current) => (current === nextActive ? current : nextActive));
     };
 
-    const renderMotion = (time: number) => {
-      const delta = Math.min((time - lastTime) / 1000, 0.05);
-      lastTime = time;
-      const ease = reducedMotion ? 1 : 1 - Math.exp(-delta * 5.4);
-      const { current, target } = motionRef.current;
-
-      keys.forEach((key) => {
-        current[key] += (target[key] - current[key]) * ease;
-      });
-
-      const floatY = reducedMotion ? 0 : Math.sin(time * 0.00072) * 3.5;
-      root.style.setProperty("--page-progress", current.progress.toFixed(4));
-      root.style.setProperty("--scene-shift", `${current.shift.toFixed(3)}vw`);
-      root.style.setProperty("--fallback-pan-x", `${current.panX.toFixed(3)}vw`);
-      root.style.setProperty("--fallback-pan-y", `${current.panY.toFixed(3)}vh`);
-      root.style.setProperty("--fallback-scale", current.scale.toFixed(5));
-      root.style.setProperty("--fallback-rotate", `${current.rotate.toFixed(3)}deg`);
-      root.style.setProperty("--asset-yaw", `${current.yaw.toFixed(3)}deg`);
-      root.style.setProperty("--asset-pitch", `${current.pitch.toFixed(3)}deg`);
-      root.style.setProperty("--pointer-yaw", `${current.pointerYaw.toFixed(3)}deg`);
-      root.style.setProperty("--pointer-pitch", `${current.pointerPitch.toFixed(3)}deg`);
-      root.style.setProperty("--pointer-pan-x", `${current.pointerPanX.toFixed(3)}vw`);
-      root.style.setProperty("--pointer-pan-y", `${current.pointerPanY.toFixed(3)}vh`);
-      root.style.setProperty("--float-y", `${floatY.toFixed(2)}px`);
-      animationFrame = window.requestAnimationFrame(renderMotion);
-    };
-
-    updateTargets();
-    Object.assign(motionRef.current.current, motionRef.current.target);
-    animationFrame = window.requestAnimationFrame(renderMotion);
-    window.addEventListener("scroll", updateTargets, { passive: true });
-    window.addEventListener("resize", updateTargets);
+    updateActive();
+    window.addEventListener("scroll", updateActive, { passive: true });
+    window.addEventListener("resize", updateActive);
     return () => {
-      window.removeEventListener("scroll", updateTargets);
-      window.removeEventListener("resize", updateTargets);
-      window.cancelAnimationFrame(animationFrame);
+      window.removeEventListener("scroll", updateActive);
+      window.removeEventListener("resize", updateActive);
     };
   }, []);
 
-  const jumpTo = (index: number) => {
-    document.getElementById(`chapter-${index + 1}`)?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const submitContact = (event: FormEvent<HTMLFormElement>) => {
+  const submitContact = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = event.currentTarget;
+    const name = (form.elements.namedItem("name") as HTMLInputElement)?.value ?? "";
+    const email = (form.elements.namedItem("email") as HTMLInputElement)?.value ?? "";
+    const interest = (form.elements.namedItem("interest") as HTMLSelectElement)?.value ?? "";
+
+    setSubmitState({ status: "submitting" });
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, interest }),
+      });
+
+      const payload = (await response.json()) as { message?: string; error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "We could not send your request just now.");
+      }
+
+      form.reset();
+      setSubmitState({
+        status: "success",
+        message:
+          payload.message ??
+          "Your request has been sent. We have also created a follow-up reminder.",
+      });
+    } catch (error) {
+      setSubmitState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "We could not send your request just now.",
+      });
+    }
   };
 
   return (
-    <main
-      ref={experienceRef}
-      className="experience"
-      onPointerMove={(event) => {
-        const x = (event.clientX / window.innerWidth - 0.5) * 2;
-        const y = (event.clientY / window.innerHeight - 0.5) * 2;
-        const target = motionRef.current.target;
-        target.pointerYaw = x * 3.8;
-        target.pointerPitch = y * -2.4;
-        target.pointerPanX = x * 0.38;
-        target.pointerPanY = y * 0.3;
-      }}
-      onPointerLeave={() => {
-        const target = motionRef.current.target;
-        target.pointerYaw = 0;
-        target.pointerPitch = 0;
-        target.pointerPanX = 0;
-        target.pointerPanY = 0;
-      }}
-    >
-      <div className="scene" aria-label="Detailed midnight-blue and platinum handshake">
-        <div className="scene-fallback" aria-hidden="true" />
+    <main ref={experienceRef} className="experience">
+      <a className="skip-link" href="#chapter-8">Skip to contact form</a>
+      <div className="scene" aria-hidden="true">
+        <div className="scene-fallback" />
       </div>
       <div className="ambient" aria-hidden="true" />
       <div className="grain" aria-hidden="true" />
       <FallbackTextOrbit active={active} />
 
       <header className="site-header">
-        <button className="brand" onClick={() => jumpTo(0)} aria-label="Bravero home">
+        <a className="brand" href="#chapter-1" aria-label="Bravero home">
           BRAVERO<span>.AI</span>
-        </button>
+        </a>
         <nav aria-label="Primary navigation">
-          <button onClick={() => jumpTo(1)}>About</button>
-          <button onClick={() => jumpTo(2)}>Search</button>
-          <button onClick={() => jumpTo(3)}>Expertise</button>
-          <button className="nav-cta" onClick={() => jumpTo(7)}>
-            Start a conversation <Arrow />
-          </button>
+          <a href="#chapter-2">About</a>
+          <a href="#chapter-3">Search</a>
+          <a href="#chapter-4">Expertise</a>
+          <a className="nav-cta" href="#chapter-8">
+            <span className="nav-cta-full">Start a conversation</span>
+            <span className="nav-cta-short">Contact</span> <Arrow />
+          </a>
         </nav>
       </header>
 
@@ -244,7 +189,7 @@ export default function Home() {
 
       <section id="chapter-1" className={`chapter hero ${active === 0 ? "is-active" : ""}`}>
         <div className="chapter-copy align-left">
-          <p className="eyebrow">EXECUTIVE SEARCH · LEADERSHIP ADVISORY</p>
+          <p className="eyebrow">EXECUTIVE SEARCH - LEADERSHIP ADVISORY</p>
           <h1>
             Exceptional leaders
             <span>shape what comes next.</span>
@@ -252,9 +197,9 @@ export default function Home() {
           <p className="lead">
             Strategic talent partnerships for the leadership decisions that define an organisation&apos;s future.
           </p>
-          <button className="primary-cta" onClick={() => jumpTo(7)}>
+          <a className="primary-cta" href="#chapter-8">
             Begin a confidential conversation <Arrow />
-          </button>
+          </a>
         </div>
         <div className="hero-proof">
           <strong>40+</strong>
@@ -263,14 +208,14 @@ export default function Home() {
       </section>
 
       <section id="chapter-2" className={`chapter ${active === 1 ? "is-active" : ""}`}>
-        <div className="chapter-copy align-right">
-          <p className="eyebrow">01 · OUR PERSPECTIVE</p>
+        <div className="chapter-copy align-left">
+          <p className="eyebrow">01 - OUR PERSPECTIVE</p>
           <h2>
             Four decades of insight.
             <span>One uncompromising standard.</span>
           </h2>
           <p className="lead">
-            We identify, engage and secure transformational leadership talent across India and global markets—with discretion, precision and deep market intelligence.
+            We identify, engage and secure transformational leadership talent across India and global markets-with discretion, precision and deep market intelligence.
           </p>
           <div className="signature-row">
             <span>TRUST</span><span>CONFIDENTIALITY</span><span>PRECISION</span><span>PARTNERSHIP</span>
@@ -280,14 +225,14 @@ export default function Home() {
 
       <section id="chapter-3" className={`chapter ${active === 2 ? "is-active" : ""}`}>
         <div className="chapter-copy align-left compact">
-          <p className="eyebrow">02 · EXECUTIVE SEARCH ADVISORY</p>
+          <p className="eyebrow">02 - EXECUTIVE SEARCH ADVISORY</p>
           <h2>
             Search, treated as
             <span>a strategic decision.</span>
           </h2>
           <p className="lead">A senior-led, research-driven system from mandate to appointment.</p>
           <div className="process-grid">
-            {["Understand", "Map", "Engage", "Assess", "Align", "Appoint"].map((item, index) => (
+            {PROCESS_STEPS.map((item, index) => (
               <div key={item}><small>{String(index + 1).padStart(2, "0")}</small><span>{item}</span></div>
             ))}
           </div>
@@ -295,25 +240,22 @@ export default function Home() {
       </section>
 
       <section id="chapter-4" className={`chapter ${active === 3 ? "is-active" : ""}`}>
-        <div className="chapter-copy align-right wide">
-          <p className="eyebrow">03 · LEADERSHIP EXPERTISE</p>
+        <div className="chapter-copy align-left wide">
+          <p className="eyebrow">03 - LEADERSHIP EXPERTISE</p>
           <h2>
             Leadership for the
             <span>moments that matter.</span>
           </h2>
           <div className="role-cloud">
-            {[
-              "CEO", "MD", "COO", "CTO", "CIO", "CHRO", "CFO", "GCC LEADERS",
-              "BUSINESS UNIT HEADS", "DIGITAL", "PRODUCT", "OPERATIONS",
-            ].map((role) => <span key={role}>{role}</span>)}
+            {LEADERSHIP_ROLES.map((role) => <span key={role}>{role}</span>)}
           </div>
-          <p className="sector-line">TECHNOLOGY · GCCs · ITES · PHARMA · MANUFACTURING · ENGINEERING · EPC</p>
+          <p className="sector-line">TECHNOLOGY - GCCs - ITES - PHARMA - MANUFACTURING - ENGINEERING - EPC</p>
         </div>
       </section>
 
       <section id="chapter-5" className={`chapter ${active === 4 ? "is-active" : ""}`}>
         <div className="chapter-copy align-left wide">
-          <p className="eyebrow">04 · OUR ENGAGEMENT MODEL</p>
+          <p className="eyebrow">04 - OUR ENGAGEMENT MODEL</p>
           <h2>
             The right leader aligns
             <span>on every dimension.</span>
@@ -327,8 +269,8 @@ export default function Home() {
       </section>
 
       <section id="chapter-6" className={`chapter ${active === 5 ? "is-active" : ""}`}>
-        <div className="chapter-copy align-right proof-copy">
-          <p className="eyebrow">05 · WHY BRAVERO</p>
+        <div className="chapter-copy align-left proof-copy">
+          <p className="eyebrow">05 - WHY BRAVERO</p>
           <h2>
             Built on trust.
             <span>Proven through outcomes.</span>
@@ -346,33 +288,32 @@ export default function Home() {
 
       <section id="chapter-7" className={`chapter ${active === 6 ? "is-active" : ""}`}>
         <div className="chapter-copy align-left wide">
-          <p className="eyebrow">06 · PARTNER WITH US</p>
+          <p className="eyebrow">06 - PARTNER WITH US</p>
           <h2>
             Your next leadership
             <span>decision starts here.</span>
           </h2>
           <div className="decision-grid">
-            <button onClick={() => jumpTo(7)}>Appoint a C-suite executive <Arrow /></button>
-            <button onClick={() => jumpTo(7)}>Strengthen the leadership bench <Arrow /></button>
-            <button onClick={() => jumpTo(7)}>Build a GCC leadership team <Arrow /></button>
-            <button onClick={() => jumpTo(7)}>Find mission-critical talent <Arrow /></button>
+            {DECISION_ITEMS.map((item) => (
+              <a key={item} href="#chapter-8">{item} <Arrow /></a>
+            ))}
           </div>
         </div>
       </section>
 
       <section id="chapter-8" className={`chapter contact ${active === 7 ? "is-active" : ""}`}>
-        <div className="chapter-copy align-right contact-copy">
-          <p className="eyebrow">07 · CONFIDENTIAL CONVERSATION</p>
+        <div className="chapter-copy align-left contact-copy">
+          <p className="eyebrow">07 - CONFIDENTIAL CONVERSATION</p>
           <h2>
             Let&apos;s begin with
             <span>a conversation.</span>
           </h2>
           <form onSubmit={submitContact}>
-            <label><span>FULL NAME</span><input name="name" autoComplete="name" placeholder="Your name" /></label>
-            <label><span>CORPORATE EMAIL</span><input name="email" type="email" autoComplete="email" placeholder="you@company.com" /></label>
+            <label><span>FULL NAME</span><input name="name" autoComplete="name" placeholder="Your name" required /></label>
+            <label><span>CORPORATE EMAIL</span><input name="email" type="email" autoComplete="email" placeholder="you@company.com" required /></label>
             <label className="full-field">
               <span>I AM LOOKING FOR</span>
-              <select name="interest" defaultValue="">
+              <select name="interest" defaultValue="" required>
                 <option value="" disabled>Select an option</option>
                 <option>Executive Search Services</option>
                 <option>Leadership Hiring</option>
@@ -380,12 +321,27 @@ export default function Home() {
                 <option>Career Opportunities</option>
               </select>
             </label>
-            <button type="submit" className="primary-cta full-field">Connect with our team <Arrow /></button>
+            <button
+              type="submit"
+              className="primary-cta full-field"
+              disabled={submitState.status === "submitting"}
+            >
+              {submitState.status === "submitting" ? "Sending request..." : "Connect with our team"} <Arrow />
+            </button>
           </form>
+          {submitState.status === "success" || submitState.status === "error" ? (
+            <p className={`form-status ${submitState.status}`} role="status" aria-live="polite">
+              {submitState.message}
+            </p>
+          ) : null}
+          <p className="contact-alt">
+            Prefer email? Write to <a href="mailto:talent.connect@bravero.ai">talent.connect@bravero.ai</a>
+          </p>
         </div>
         <footer>
-          <span>EXECUTIVE SEARCH · LEADERSHIP ADVISORY · STRATEGIC TALENT PARTNERSHIPS</span>
-          <span>MIDNIGHT BLUE · PLATINUM · BRAVERO SIGNATURE</span>
+          <span>EXECUTIVE SEARCH - LEADERSHIP ADVISORY - STRATEGIC TALENT PARTNERSHIPS</span>
+          <a href="mailto:talent.connect@bravero.ai">talent.connect@bravero.ai</a>
+          <span>MIDNIGHT BLUE - PLATINUM - BRAVERO SIGNATURE</span>
         </footer>
       </section>
     </main>
