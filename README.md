@@ -102,6 +102,36 @@ Use build and validation commands for targeted diagnosis after a remote failure,
 
 The timeout defaults can be overridden for a controlled canary with `SITES_INSTALL_TIMEOUT`, `SITES_INSTALL_KILL_AFTER`, `SITES_BUILD_TIMEOUT`, and `SITES_BUILD_KILL_AFTER`. A timeout fails the command; the helpers never retry an unchanged install or build.
 
+## Bravero Contact Automation
+
+The site contact form now posts to `app/api/contact/route.ts` and performs two actions on submit:
+
+- sends a Gmail notification to the recruiter inbox
+- creates a Google Calendar follow-up event
+
+Set these environment variables before using the form:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REFRESH_TOKEN`
+- `BRAVERO_NOTIFICATION_EMAIL`
+- `GOOGLE_CALENDAR_ID` optional, defaults to `primary`
+- `GOOGLE_CALENDAR_TIMEZONE` optional, defaults to `Asia/Kolkata`
+- `BRAVERO_FOLLOW_UP_MINUTES` optional, defaults to `30`
+
+The Google OAuth client must have access to these scopes:
+
+- `https://www.googleapis.com/auth/gmail.send`
+- `https://www.googleapis.com/auth/calendar.events`
+
+The refresh token should belong to the same Google account that will send the email and own the calendar.
+
+For the Bravero setup, use `talent.connect@bravero.ai` as:
+
+- the Gmail account you sign into when creating the refresh token
+- the `BRAVERO_NOTIFICATION_EMAIL` value if you want form submissions delivered to that inbox
+- the mailbox/calendar owner for `primary`, unless you intentionally use a different Google Calendar ID
+
 ## Learn More
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)
