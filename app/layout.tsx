@@ -48,6 +48,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  verification: {
+    google: "PE1uKmRlW4CrbibzZekcYipmDK36hgr-RdmQ7Z1Tp7Y",
+  },
   formatDetection: {
     telephone: false,
   },
