@@ -171,10 +171,14 @@ button {
 }
 
 .site-header nav .nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 11px 16px;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ivory);
+  white-space: nowrap;
 }
 
 .nav-cta-short {
@@ -636,7 +640,7 @@ h2 span {
   position: absolute;
   z-index: -1;
   top: 40%;
-  right: -3vw;
+  right: -20vw;
   color: rgba(111, 163, 235, 0.08);
   font-size: clamp(11rem, 24vw, 23rem);
   font-weight: 800;

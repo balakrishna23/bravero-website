@@ -54,9 +54,6 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  other: {
-    "codex-preview": "development",
-  },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

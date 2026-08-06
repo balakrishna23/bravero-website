@@ -186,10 +186,12 @@ export default function Home() {
         <span className="rail-label">08</span>
       </aside>
 
-      <div className="scroll-cue" aria-hidden="true">
-        <span>SCROLL TO EXPLORE</span>
-        <i />
-      </div>
+      {active < 7 ? (
+        <div className="scroll-cue" aria-hidden="true">
+          <span>SCROLL TO EXPLORE</span>
+          <i />
+        </div>
+      ) : null}
 
       <section id="chapter-1" className={`chapter hero ${active === 0 ? "is-active" : ""}`}>
         <div className="chapter-copy align-left">
