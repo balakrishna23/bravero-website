@@ -81,7 +81,7 @@ export default function RootLayout({
               name: "Bravero",
               url: "https://bravero.ai",
               logo: "https://bravero.ai/favicon.svg",
-              email: "talent.connect@bravero.ai",
+              email: "vamsee.krishna@bravero.ai",
               description:
                 "Executive search and leadership advisory for C-suite, GCC and business leadership appointments across India and global markets.",
             }),

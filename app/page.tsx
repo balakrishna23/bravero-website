@@ -343,14 +343,9 @@ export default function Home() {
               {submitState.message}
             </p>
           ) : null}
-          <p className="contact-alt">
-            Prefer email? Write to <a href="mailto:talent.connect@bravero.ai">talent.connect@bravero.ai</a>
-          </p>
         </div>
         <footer>
           <span>EXECUTIVE SEARCH - LEADERSHIP ADVISORY - STRATEGIC TALENT PARTNERSHIPS</span>
-          <a href="mailto:talent.connect@bravero.ai">talent.connect@bravero.ai</a>
-          <span>MIDNIGHT BLUE - PLATINUM - BRAVERO SIGNATURE</span>
         </footer>
       </section>
     </main>
