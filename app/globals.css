@@ -727,23 +727,6 @@ h2 span {
   color: #ffb4b4;
 }
 
-.contact-alt {
-  margin: 18px 0 0;
-  color: rgba(237, 244, 255, 0.42);
-  font-size: 0.66rem;
-  letter-spacing: 0.04em;
-}
-
-.contact-alt a {
-  color: var(--gold);
-  text-decoration: none;
-}
-
-.contact-alt a:hover,
-.contact-alt a:focus-visible {
-  text-decoration: underline;
-}
-
 .contact footer {
   position: absolute;
   right: clamp(28px, 7vw, 132px);
@@ -755,17 +738,6 @@ h2 span {
   color: rgba(237, 244, 255, 0.26);
   font-size: 0.5rem;
   letter-spacing: 0.13em;
-}
-
-.contact footer a {
-  color: rgba(139, 184, 247, 0.5);
-  text-decoration: none;
-  transition: color 220ms ease;
-}
-
-.contact footer a:hover,
-.contact footer a:focus-visible {
-  color: var(--gold);
 }
 
 @media (max-width: 1000px) {
@@ -831,7 +803,6 @@ h2 span {
   .site-header .nav-cta span { font-size: 0.52rem; }
   .chapter { padding: 92px 18px 76px; }
   .hero-proof { right: 18px; bottom: 66px; width: 140px; }
-  .contact-alt { font-size: 0.6rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

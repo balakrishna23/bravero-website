@@ -326,7 +326,7 @@ export default function Home() {
               className="primary-cta full-field"
               disabled={submitState.status === "submitting"}
             >
-              {submitState.status === "submitting" ? "Sending request..." : "Connect with our team"} <Arrow />
+              {submitState.status === "submitting" ? "Sending request..." : "Discuss a mandate"} <Arrow />
             </button>
           </form>
           {submitState.status === "success" || submitState.status === "error" ? (
@@ -334,14 +334,9 @@ export default function Home() {
               {submitState.message}
             </p>
           ) : null}
-          <p className="contact-alt">
-            Prefer email? Write to <a href="mailto:talent.connect@bravero.ai">talent.connect@bravero.ai</a>
-          </p>
         </div>
         <footer>
           <span>EXECUTIVE SEARCH - LEADERSHIP ADVISORY - STRATEGIC TALENT PARTNERSHIPS</span>
-          <a href="mailto:talent.connect@bravero.ai">talent.connect@bravero.ai</a>
-          <span>MIDNIGHT BLUE - PLATINUM - BRAVERO SIGNATURE</span>
         </footer>
       </section>
     </main>

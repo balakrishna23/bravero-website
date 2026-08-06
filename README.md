@@ -129,7 +129,7 @@ The Google OAuth client must have access to these scopes:
 
 The refresh token should belong to the same Google account that will send the email and own the calendar.
 
-For the Bravero setup, use `talent.connect@bravero.ai` as:
+For the Bravero setup, use `vamsee.krishna@bravero.ai` as:
 
 - the Gmail account you sign into when creating the refresh token
 - the `BRAVERO_NOTIFICATION_EMAIL` value if you want form submissions delivered to that inbox
