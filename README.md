@@ -13,8 +13,7 @@ Drizzle support.
 
 The Sites lifecycle CLI runs the locked dependency install before returning this checkout. Edit the source under `app/`, then checkpoint when a coherent milestone is ready to inspect or share. The remote Sites builder runs `npm run build` against the pushed commit. Do not repeat install or build as a normal pre-checkpoint step.
 
-This project keeps a checked-in `wrangler.jsonc` for local Cloudflare bindings and
-asset-worker configuration.
+This starter does not use `wrangler.jsonc`.
 
 `install:ci` is intentionally a single, non-retrying `npm ci`. It refuses a concurrent install for the same project, consumes a matching image-seeded npm cache with `--prefer-offline` while retaining registry fallback for a missing cache object, otherwise downloads and verifies the complete vinext tarball recorded in `package-lock.json`, limits npm to one socket, and terminates a stalled install. `build` applies a short timeout and then validates the Sites artifact. These helpers target Linux and use GNU `timeout`; they are not native macOS scripts.
 
@@ -94,9 +93,7 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 - `npm run install:ci`: perform the one bounded lockfile install
 - `npm run dev`: start the Vite/Vinext development server
 - `npm run build`: build and validate the deployable Sites artifact
-- `npm run build:hostinger`: build a standard Node-hosted Next.js artifact
 - `npm run start`: start the built Vinext application
-- `npm run start:hostinger`: start the site with the standard Next.js server
 - `npm test`: build, validate, and verify the rendered development-preview metadata
 - `npm run validate:artifact`: recheck an existing artifact's manifest and ESM `default.fetch` export
 - `npm run db:generate`: generate Drizzle migrations after schema changes
@@ -134,11 +131,6 @@ For the Bravero setup, use `vamsee.krishna@bravero.ai` as:
 - the Gmail account you sign into when creating the refresh token
 - the `BRAVERO_NOTIFICATION_EMAIL` value if you want form submissions delivered to that inbox
 - the mailbox/calendar owner for `primary`, unless you intentionally use a different Google Calendar ID
-
-## Hostinger Deployment
-
-This repo can also be deployed on Hostinger's Node.js-capable hosting using a standard Next.js flow.
-See [HOSTINGER.md](./HOSTINGER.md) for the exact plan recommendation, build command, start command, Node version, and required environment variables.
 
 ## Learn More
 

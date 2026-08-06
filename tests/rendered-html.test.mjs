@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const developmentPreviewMeta =
@@ -29,5 +30,24 @@ test("renders development preview metadata", async () => {
     response.headers.get("content-type") ?? "",
     /^text\/html\b/i,
   );
-  assert.match(await response.text(), developmentPreviewMeta);
+  const html = await response.text();
+  assert.match(html, developmentPreviewMeta);
+  assert.match(html, /rel=["']canonical["'][^>]+href=["']https:\/\/bravero\.ai\/["']/i);
+  assert.match(html, /property=["']og:image["'][^>]+content=["']https:\/\/bravero\.ai\/og-bravero\.png["']/i);
+  assert.match(html, /application\/ld\+json/i);
+});
+
+test("packages a valid sitemap and crawler policy", async () => {
+  const sitemap = await readFile(
+    new URL("../dist/client/sitemap.xml", import.meta.url),
+    "utf8",
+  );
+  const robots = await readFile(
+    new URL("../dist/client/robots.txt", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(sitemap, /<loc>https:\/\/bravero\.ai\/<\/loc>/);
+  assert.match(robots, /User-agent: \*/);
+  assert.match(robots, /Sitemap: https:\/\/bravero\.ai\/sitemap\.xml/);
 });

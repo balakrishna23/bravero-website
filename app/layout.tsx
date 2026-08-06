@@ -1,33 +1,58 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const title = "Bravero.ai — Executive Search & Leadership Advisory";
-const description =
-  "Executive Search, Leadership Advisory and Strategic Talent Partnerships for organisations across India and global markets.";
-const ogImage = "/bravero-handshake-midnight-platinum.webp";
-const metadataBase = process.env.NEXT_PUBLIC_SITE_URL
-  ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
-  : new URL("https://bravero.ai");
-
 export const metadata: Metadata = {
-  title,
-  description,
-  metadataBase,
+  metadataBase: new URL("https://bravero.ai"),
+  applicationName: "Bravero",
+  title: "Bravero | Executive Search & Leadership Advisory",
+  description:
+    "Senior-led executive search for C-suite, GCC and business leadership appointments across India and global markets.",
+  keywords: [
+    "executive search India",
+    "leadership hiring",
+    "C-suite recruitment",
+    "GCC leadership hiring",
+    "leadership advisory",
+  ],
+  authors: [{ name: "Bravero" }],
+  creator: "Bravero",
+  publisher: "Bravero",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title,
-    description,
-    siteName: "Bravero.ai",
-    images: [{ url: ogImage }],
     type: "website",
+    locale: "en_IN",
+    url: "/",
+    siteName: "Bravero",
+    title: "Bravero | Executive Search & Leadership Advisory",
+    description:
+      "Senior-led executive search for C-suite, GCC and business leadership appointments across India and global markets.",
+    images: [
+      {
+        url: "/og-bravero.png",
+        width: 1200,
+        height: 630,
+        alt: "Bravero executive search and leadership advisory",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title,
-    description,
-    images: [ogImage],
+    title: "Bravero | Executive Search & Leadership Advisory",
+    description:
+      "Senior-led executive search for C-suite, GCC and business leadership appointments across India and global markets.",
+    images: ["/og-bravero.png"],
   },
-  other: {
-    "codex-preview": "development",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  verification: {
+    google: "PE1uKmRlW4CrbibzZekcYipmDK36hgr-RdmQ7Z1Tp7Y",
+  },
+  formatDetection: {
+    telephone: false,
   },
   icons: {
     icon: "/favicon.svg",
@@ -42,7 +67,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Bravero",
+              url: "https://bravero.ai",
+              logo: "https://bravero.ai/favicon.svg",
+              email: "vamsee.krishna@bravero.ai",
+              description:
+                "Executive search and leadership advisory for C-suite, GCC and business leadership appointments across India and global markets.",
+            }),
+          }}
+        />
+      </body>
     </html>
   );
 }

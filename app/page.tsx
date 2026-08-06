@@ -23,7 +23,7 @@ const spatialTerms = [
   "ALIGNMENT",
   "INTELLIGENCE",
   "LEADERSHIP",
-  "INSIGHT",
+  "JUDGEMENT",
   "DISCRETION",
   "PRECISION",
   "PARTNERSHIP",
@@ -69,7 +69,11 @@ function FallbackTextOrbit({ active }: { active: number }) {
 }
 
 function Arrow() {
-  return <span aria-hidden="true">-&gt;</span>;
+  return (
+    <svg className="arrow-icon" viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M4 10h11M11 6l4 4-4 4" />
+    </svg>
+  );
 }
 
 export default function Home() {
@@ -165,10 +169,10 @@ export default function Home() {
         </a>
         <nav aria-label="Primary navigation">
           <a href="#chapter-2">About</a>
-          <a href="#chapter-3">Search</a>
+          <a href="#chapter-3">Approach</a>
           <a href="#chapter-4">Expertise</a>
           <a className="nav-cta" href="#chapter-8">
-            <span className="nav-cta-full">Start a conversation</span>
+            <span className="nav-cta-full">Discuss a mandate</span>
             <span className="nav-cta-short">Contact</span> <Arrow />
           </a>
         </nav>
@@ -182,28 +186,33 @@ export default function Home() {
         <span className="rail-label">08</span>
       </aside>
 
-      <div className="scroll-cue" aria-hidden="true">
-        <span>SCROLL TO EXPLORE</span>
-        <i />
-      </div>
+      {active < 7 ? (
+        <div className="scroll-cue" aria-hidden="true">
+          <span>SCROLL TO EXPLORE</span>
+          <i />
+        </div>
+      ) : null}
 
       <section id="chapter-1" className={`chapter hero ${active === 0 ? "is-active" : ""}`}>
         <div className="chapter-copy align-left">
-          <p className="eyebrow">EXECUTIVE SEARCH - LEADERSHIP ADVISORY</p>
+          <p className="eyebrow">SENIOR-LED EXECUTIVE SEARCH - INDIA &amp; GLOBAL MARKETS</p>
           <h1>
-            Exceptional leaders
-            <span>shape what comes next.</span>
+            Find the leader
+            <span>your next chapter demands.</span>
           </h1>
           <p className="lead">
-            Strategic talent partnerships for the leadership decisions that define an organisation&apos;s future.
+            Executive search for C-suite, GCC and business leadership appointments where the right decision changes what comes next.
           </p>
-          <a className="primary-cta" href="#chapter-8">
-            Begin a confidential conversation <Arrow />
-          </a>
+          <div className="hero-actions">
+            <a className="primary-cta" href="#chapter-8">
+              Discuss a leadership mandate <Arrow />
+            </a>
+            <a className="secondary-cta" href="#chapter-3">Explore our approach <Arrow /></a>
+          </div>
         </div>
         <div className="hero-proof">
           <strong>40+</strong>
-          <span>YEARS OF CUMULATIVE EXPERIENCE</span>
+          <span>YEARS IN EXECUTIVE SEARCH &amp; ADVISORY</span>
         </div>
       </section>
 
@@ -211,11 +220,11 @@ export default function Home() {
         <div className="chapter-copy align-left">
           <p className="eyebrow">01 - OUR PERSPECTIVE</p>
           <h2>
-            Four decades of insight.
+            Four decades of judgement.
             <span>One uncompromising standard.</span>
           </h2>
           <p className="lead">
-            We identify, engage and secure transformational leadership talent across India and global markets — with discretion, precision and deep market intelligence.
+            We identify, engage and secure transformational leadership talent across India and global markets—with discretion, precision and deep market intelligence.
           </p>
           <div className="signature-row">
             <span>TRUST</span><span>CONFIDENTIALITY</span><span>PRECISION</span><span>PARTNERSHIP</span>
@@ -249,7 +258,7 @@ export default function Home() {
           <div className="role-cloud">
             {LEADERSHIP_ROLES.map((role) => <span key={role}>{role}</span>)}
           </div>
-          <p className="sector-line">TECHNOLOGY - GCCs - ITES - PHARMA - MANUFACTURING - ENGINEERING - EPC</p>
+          <p className="sector-line"><strong>SECTOR FOCUS</strong> TECHNOLOGY - GCCs - ITES - PHARMA - MANUFACTURING - ENGINEERING - EPC</p>
         </div>
       </section>
 
@@ -275,6 +284,7 @@ export default function Home() {
             Built on trust.
             <span>Proven through outcomes.</span>
           </h2>
+          <p className="lead proof-intro">A senior-led approach for high-stakes appointments, grounded in research, discretion and long-term partnership.</p>
           <div className="big-number">40<span>+</span></div>
           <ul className="proof-list">
             <li>Confidential mandates</li>
@@ -305,9 +315,10 @@ export default function Home() {
         <div className="chapter-copy align-left contact-copy">
           <p className="eyebrow">07 - CONFIDENTIAL CONVERSATION</p>
           <h2>
-            Let&apos;s begin with
-            <span>a conversation.</span>
+            Tell us about your
+            <span>leadership mandate.</span>
           </h2>
+          <p className="contact-intro">Your enquiry goes directly to the Bravero team and is treated as confidential.</p>
           <form onSubmit={submitContact}>
             <label><span>FULL NAME</span><input name="name" autoComplete="name" placeholder="Your name" required /></label>
             <label><span>CORPORATE EMAIL</span><input name="email" type="email" autoComplete="email" placeholder="you@company.com" required /></label>
@@ -326,7 +337,7 @@ export default function Home() {
               className="primary-cta full-field"
               disabled={submitState.status === "submitting"}
             >
-              {submitState.status === "submitting" ? "Sending request..." : "Discuss a mandate"} <Arrow />
+              {submitState.status === "submitting" ? "Sending request..." : "Send confidential enquiry"} <Arrow />
             </button>
           </form>
           {submitState.status === "success" || submitState.status === "error" ? (
