@@ -29,5 +29,9 @@ test("renders development preview metadata", async () => {
     response.headers.get("content-type") ?? "",
     /^text\/html\b/i,
   );
-  assert.match(await response.text(), developmentPreviewMeta);
+  const html = await response.text();
+  assert.match(html, developmentPreviewMeta);
+  assert.match(html, /rel=["']canonical["'][^>]+href=["']https:\/\/bravero\.ai\/["']/i);
+  assert.match(html, /property=["']og:image["'][^>]+content=["']https:\/\/bravero\.ai\/og-bravero\.png["']/i);
+  assert.match(html, /application\/ld\+json/i);
 });
