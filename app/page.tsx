@@ -215,7 +215,7 @@ export default function Home() {
             <span>One uncompromising standard.</span>
           </h2>
           <p className="lead">
-            We identify, engage and secure transformational leadership talent across India and global markets-with discretion, precision and deep market intelligence.
+            We identify, engage and secure transformational leadership talent across India and global markets — with discretion, precision and deep market intelligence.
           </p>
           <div className="signature-row">
             <span>TRUST</span><span>CONFIDENTIALITY</span><span>PRECISION</span><span>PARTNERSHIP</span>

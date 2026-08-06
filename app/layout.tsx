@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const title = "Bravero.ai - Executive Search & Leadership Advisory";
+const title = "Bravero.ai — Executive Search & Leadership Advisory";
 const description =
   "Executive Search, Leadership Advisory and Strategic Talent Partnerships for organisations across India and global markets.";
 const ogImage = "/bravero-handshake-midnight-platinum.webp";
