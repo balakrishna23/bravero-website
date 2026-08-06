@@ -9,6 +9,8 @@ fi
 
 worker="${SITES_PROJECT_ROOT}/dist/server/index.js"
 hosting="${SITES_PROJECT_ROOT}/dist/.openai/hosting.json"
+sitemap="${SITES_PROJECT_ROOT}/dist/client/sitemap.xml"
+robots="${SITES_PROJECT_ROOT}/dist/client/robots.txt"
 
 [[ -f "${worker}" ]] || {
   echo "Missing Sites Worker entry: dist/server/index.js" >&2
@@ -18,13 +20,31 @@ hosting="${SITES_PROJECT_ROOT}/dist/.openai/hosting.json"
   echo "Missing packaged Sites manifest: dist/.openai/hosting.json" >&2
   exit 66
 }
+[[ -f "${sitemap}" ]] || {
+  echo "Missing packaged sitemap: dist/client/sitemap.xml" >&2
+  exit 66
+}
+[[ -f "${robots}" ]] || {
+  echo "Missing packaged crawler policy: dist/client/robots.txt" >&2
+  exit 66
+}
 
-node --input-type=module - "${worker}" "${hosting}" <<'NODE'
+node --input-type=module - "${worker}" "${hosting}" "${sitemap}" "${robots}" <<'NODE'
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
-const [workerPath, hostingPath] = process.argv.slice(2);
+const [workerPath, hostingPath, sitemapPath, robotsPath] = process.argv.slice(2);
 JSON.parse(await readFile(hostingPath, "utf8"));
+
+const sitemap = await readFile(sitemapPath, "utf8");
+if (!sitemap.includes("<loc>https://bravero.ai/</loc>")) {
+  throw new Error("Sitemap does not contain the canonical Bravero URL");
+}
+
+const robots = await readFile(robotsPath, "utf8");
+if (!robots.includes("Sitemap: https://bravero.ai/sitemap.xml")) {
+  throw new Error("Crawler policy does not reference the Bravero sitemap");
+}
 
 const workerUrl = pathToFileURL(workerPath);
 workerUrl.searchParams.set("sites-validation", `${process.pid}-${Date.now()}`);
